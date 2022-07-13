@@ -167,6 +167,81 @@ public class FluxAndMonoGeneratorService {
         return aMono.concatWith(bMono).log();
     }
 
+    public Flux<String> explore_merge() {
+
+        Flux<String> abcFlux = Flux.just("A", "B", "C")
+            .delayElements(Duration.ofMillis(100));
+        Flux<String> defFlux = Flux.just("D", "E", "F")
+            .delayElements(Duration.ofMillis(125));
+
+        return Flux.merge(abcFlux, defFlux).log();
+    }
+
+    public Flux<String> explore_mergeWith() {
+
+        Flux<String> abcFlux = Flux.just("A", "B", "C")
+            .delayElements(Duration.ofMillis(100));
+        Flux<String> defFlux = Flux.just("D", "E", "F")
+            .delayElements(Duration.ofMillis(125));
+
+        return abcFlux.mergeWith(defFlux).log();
+    }
+
+    public Flux<String> explore_mergeWith_mono() {
+
+        var aMono = Mono.just("A");
+        var bMono = Mono.just("B");
+
+        return aMono.mergeWith(bMono).log();
+    }
+
+    public Flux<String> explore_mergeSequential() {
+
+        Flux<String> abcFlux = Flux.just("A", "B", "C")
+            .delayElements(Duration.ofMillis(100));
+        Flux<String> defFlux = Flux.just("D", "E", "F")
+            .delayElements(Duration.ofMillis(125));
+
+        return Flux.mergeSequential(abcFlux, defFlux).log();
+    }
+
+    public Flux<String> explore_zip() {
+
+        Flux<String> abcFlux = Flux.just("A", "B", "C");
+        Flux<String> defFlux = Flux.just("D", "E", "F");
+
+        return Flux.zip(abcFlux, defFlux, (first, second) -> first + second).log();
+    }
+
+
+    public Flux<String> explore_zipWith() {
+
+        Flux<String> abcFlux = Flux.just("A", "B", "C");
+        Flux<String> defFlux = Flux.just("D", "E", "F");
+
+        return abcFlux.zipWith(defFlux, (first, second) -> first + second).log();
+    }
+
+    public Flux<String> explore_zip_1() {
+
+        Flux<String> abcFlux = Flux.just("A", "B", "C");
+        Flux<String> defFlux = Flux.just("D", "E", "F");
+        var _123Flux = Flux.just("1", "2", "3");
+        var _456Flux = Flux.just("4", "5", "6");
+
+        return Flux.zip(abcFlux, defFlux, _123Flux, _456Flux)
+            .map((t4) -> t4.getT1() + t4.getT2() + t4.getT3() + t4.getT4()).log();
+    }
+
+    public Mono<String> explore_zipWith_mono() {
+
+        var aMono = Mono.just("A");
+        var bMono = Mono.just("B");
+
+        return aMono.zipWith(bMono)
+            .map((t2) -> t2.getT1() + t2.getT2()).log();
+    }
+
     public static void main(String[] args) {
 
         FluxAndMonoGeneratorService fluxAndMonoGeneratorService = new FluxAndMonoGeneratorService();
