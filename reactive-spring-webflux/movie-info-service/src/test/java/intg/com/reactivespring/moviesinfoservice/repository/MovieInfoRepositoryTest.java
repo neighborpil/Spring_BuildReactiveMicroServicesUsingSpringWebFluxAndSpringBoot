@@ -1,5 +1,6 @@
 package com.reactivespring.moviesinfoservice.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.reactivespring.moviesinfoservice.domain.MovieInfo;
@@ -12,11 +13,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @DataMongoTest
 @ActiveProfiles("test")
+@TestPropertySource(properties = "spring.mongodb.embedded.version=3.5.5")
 class MovieInfoRepositoryTest {
 
     @Autowired
@@ -48,7 +51,18 @@ class MovieInfoRepositoryTest {
         StepVerifier.create(moviesInfoFlux)
             .expectNextCount(3)
             .verifyComplete();
+    }
 
+    @Test
+    void findById() {
 
+        var moviesInfoMono = movieInfoRepository.findById("abc").log();
+
+        StepVerifier.create(moviesInfoMono)
+//                .expectNextCount(1)
+                .assertNext(movieInfo -> {
+                    assertThat(movieInfo.getName()).isEqualTo("Dark Knight Rises");
+                })
+                .verifyComplete();
     }
 }
