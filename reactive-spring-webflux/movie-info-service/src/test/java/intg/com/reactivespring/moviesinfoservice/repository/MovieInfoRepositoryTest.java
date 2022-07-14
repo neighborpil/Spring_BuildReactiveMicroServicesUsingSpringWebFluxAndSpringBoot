@@ -65,4 +65,49 @@ class MovieInfoRepositoryTest {
                 })
                 .verifyComplete();
     }
+
+    @Test
+    void saveMovieInfo() {
+
+        var movieInfo = new MovieInfo(null, "Batman Begins1",
+                2005, List.of("Christian Bale", "Michael Cane"), LocalDate.parse("2005-06-15"));
+
+        var moviesInfoMono = movieInfoRepository.save(movieInfo).log();
+
+        StepVerifier.create(moviesInfoMono)
+//                .expectNextCount(1)
+                .assertNext(movieInfo1 -> {
+                    assertThat(movieInfo1.getMovieInfoId()).isNotNull();
+                    assertThat(movieInfo.getName()).isEqualTo("Batman Begins1");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void updateMovieInfo() {
+
+        var movieInfo= movieInfoRepository.findById("abc").block();
+        movieInfo.setYear(2022);
+
+        var moviesInfoMono = movieInfoRepository.save(movieInfo).log();
+
+        StepVerifier.create(moviesInfoMono)
+//                .expectNextCount(1)
+                .assertNext(movieInfo1 -> {
+                    assertThat(movieInfo.getYear()).isEqualTo(2022);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void delete() {
+
+        movieInfoRepository.deleteById("abc").block();
+
+        var moviesInfoFlux = movieInfoRepository.findAll().log();
+
+        StepVerifier.create(moviesInfoFlux)
+                .expectNextCount(2)
+                .verifyComplete();
+    }
 }
