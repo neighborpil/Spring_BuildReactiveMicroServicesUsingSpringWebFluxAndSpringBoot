@@ -3,6 +3,9 @@ package com.reactivespring.moviesinfoservice.domain;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,9 +20,12 @@ public class MovieInfo {
 
     @Id
     private String movieInfoId;
+    @NotBlank(message = "movieInfo.name must be present")
     private String name;
+    @NotNull
+    @Positive(message = "movieinfo.year must be a Positive value")
     private Integer year;
-    private List<String> cast;
+    private List<@NotBlank(message = "movieinfo.cast must be present") String> cast;
     private LocalDate release_date;
 
 }

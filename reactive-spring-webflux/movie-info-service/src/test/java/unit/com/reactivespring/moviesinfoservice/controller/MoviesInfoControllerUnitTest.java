@@ -1,6 +1,8 @@
 package com.reactivespring.moviesinfoservice.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.when;
 
 import com.reactivespring.moviesinfoservice.domain.MovieInfo;
@@ -70,5 +72,107 @@ public class MoviesInfoControllerUnitTest {
                 MovieInfo movieInfo = movieInfoEntityExchangeResult.getResponseBody();
                 assertThat(movieInfo.getMovieInfoId()).isNotNull();
             });
+    }
+
+    @Test
+    void addMovieInfo() {
+
+        MovieInfo movieInfo = new MovieInfo(null, "Batman Begins1",
+            2005, List.of("Christian Bale", "Michael Cane"), LocalDate.parse("2005-06-15"));
+
+        when(moviesInfoServiceMock.addMovieInfo(isA(MovieInfo.class))).thenReturn(
+            Mono.just(new MovieInfo("mockId", "Batman Begins1",
+                2005, List.of("Christian Bale", "Michael Cane"), LocalDate.parse("2005-06-15")))
+        );
+
+        webTestClient.post()
+            .uri(MOVIES_INFO_URL)
+            .bodyValue(movieInfo)
+            .exchange()
+            .expectStatus()
+            .isCreated()
+            .expectBody(MovieInfo.class)
+            .consumeWith(movieInfoEntityExchangeResult -> {
+
+                MovieInfo savedMovieInfo = movieInfoEntityExchangeResult.getResponseBody();
+                assert savedMovieInfo != null;
+                assert savedMovieInfo.getMovieInfoId() != null;
+
+                assertEquals("mockId", savedMovieInfo.getMovieInfoId());
+            });
+    }
+
+    @Test
+    void addMovieInfo_validation() {
+
+        MovieInfo movieInfo = new MovieInfo(null, "",
+            -2005, List.of(""), LocalDate.parse("2005-06-15"));
+
+        webTestClient.post()
+            .uri(MOVIES_INFO_URL)
+            .bodyValue(movieInfo)
+            .exchange()
+            .expectStatus()
+            .isBadRequest()
+            .expectBody(String.class)
+            .consumeWith(stringEntityExchangeResult -> {
+                String responseBody = stringEntityExchangeResult.getResponseBody();
+                System.out.println("responseBody: " + responseBody);
+                var expectedErrorMessage = "movieInfo.name must be present,movieinfo.cast must be present,movieinfo.year must be a Positive value";
+                assert responseBody != null;
+                assertEquals(expectedErrorMessage, responseBody);
+            });
+//            .expectBody(MovieInfo.class)
+//            .consumeWith(movieInfoEntityExchangeResult -> {
+//
+//                MovieInfo savedMovieInfo = movieInfoEntityExchangeResult.getResponseBody();
+//                assert savedMovieInfo != null;
+//                assert savedMovieInfo.getMovieInfoId() != null;
+//
+//                assertEquals("mockId", savedMovieInfo.getMovieInfoId());
+//            });
+    }
+
+
+    @Test
+    void updateMovieInfo() {
+        var moveInfoId = "abc";
+        MovieInfo movieInfo = new MovieInfo(null, "Dark Knight Rises1",
+            2005, List.of("Christian Bale", "Michael Cane"), LocalDate.parse("2005-06-15"));
+
+        when(moviesInfoServiceMock.updateMovieInfo(isA(MovieInfo.class), isA(String.class))).thenReturn(
+            Mono.just(new MovieInfo(moveInfoId, "Dark Knight Rises1",
+                2005, List.of("Christian Bale", "Michael Cane"), LocalDate.parse("2005-06-15")))
+        );
+
+        webTestClient
+            .put()
+            .uri(MOVIES_INFO_URL + "/{id}", moveInfoId)
+            .bodyValue(movieInfo)
+            .exchange()
+            .expectStatus()
+            .is2xxSuccessful()
+            .expectBody(MovieInfo.class)
+            .consumeWith(movieInfoEntityExchangeResult -> {
+
+                MovieInfo updatedMovieInfo = movieInfoEntityExchangeResult.getResponseBody();
+                assert updatedMovieInfo != null;
+                assert updatedMovieInfo.getMovieInfoId() != null;
+                assertEquals("Dark Knight Rises1", updatedMovieInfo.getName());
+            });
+    }
+
+    @Test
+    void deleteMovieInfo() {
+        var moveInfoId = "abc";
+
+        when(moviesInfoServiceMock.deleteMovieInfo(isA(String.class))).thenReturn(Mono.empty());
+
+        webTestClient
+            .delete()
+            .uri(MOVIES_INFO_URL + "/{id}", moveInfoId)
+            .exchange()
+            .expectStatus()
+            .isNoContent();
     }
 }
