@@ -120,4 +120,19 @@ class MovieInfoRepositoryTest {
             .expectNextCount(1)
             .verifyComplete();
     }
+
+    @Test
+    void findByName() {
+
+        var moveName = "Batman Begins";
+
+        var moviesInfoMono = movieInfoRepository.findByName(moveName).log();
+
+        StepVerifier.create(moviesInfoMono)
+//                .expectNextCount(1)
+                .assertNext(movieInfo -> {
+                    assertThat(movieInfo.getName()).isEqualTo(moveName);
+                })
+                .verifyComplete();
+    }
 }

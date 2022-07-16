@@ -198,4 +198,21 @@ class MoviesInfoControllerIntgTest {
             .expectStatus()
             .isNoContent();
     }
+
+    @Test
+    void getMovieInfoByName() {
+        var movieInfoName= "Batman Begins";
+
+        webTestClient
+            .get()
+            .uri(MOVIES_INFO_URL + "/name/{id}", movieInfoName)
+            .exchange()
+            .expectStatus()
+            .is2xxSuccessful()
+            .expectBody(MovieInfo.class)
+            .consumeWith(movieInfoEntityExchangeResult -> {
+                MovieInfo movieInfo = movieInfoEntityExchangeResult.getResponseBody();
+                assertThat(movieInfo.getMovieInfoId()).isNotNull();
+            });
+    }
 }
