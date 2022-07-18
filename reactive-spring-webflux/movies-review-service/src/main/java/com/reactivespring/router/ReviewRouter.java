@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import static org.springframework.web.reactive.function.server.RequestPredicates.DELETE;
 import static org.springframework.web.reactive.function.server.RequestPredicates.path;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
@@ -18,7 +19,9 @@ public class ReviewRouter {
         return route()
                 .nest(path("/v1/reviews"), builder -> {
                     builder.POST("", request -> reviewHandler.addReview(request))
-                            .GET("", request -> reviewHandler.getReviews(request));
+                            .GET("", request -> reviewHandler.getReviews(request))
+                        .PUT("/{id}", request -> reviewHandler.updateReview(request))
+                        .DELETE("/{id}", request -> reviewHandler.deleteReview(request));
                 })
                 .GET("/v1/helloworld", (request -> ServerResponse.ok().bodyValue("helloworld")))
                 .build();

@@ -27,7 +27,44 @@ public class ReviewHandler {
 
     public Mono<ServerResponse> getReviews(ServerRequest request) {
 
-        Flux<Review> reviewsFlux = reviewReactiveRepository.findAll();
+        var movieInfoId = request.queryParam("movieInfoId");
+        if (movieInfoId.isPresent()) {
+            Flux<Review> reviewsFlux = reviewReactiveRepository.findReviewsByMovieInfoId(Long.valueOf(movieInfoId.get()));
+            return buildReviewsResponse(reviewsFlux);
+        } else {
+            Flux<Review> reviewsFlux = reviewReactiveRepository.findAll();
+            return buildReviewsResponse(reviewsFlux);
+        }
+
+    }
+
+    private Mono<ServerResponse> buildReviewsResponse(Flux<Review> reviewsFlux) {
         return ServerResponse.ok().body(reviewsFlux, Review.class);
+    }
+
+    public Mono<ServerResponse> updateReview(ServerRequest request) {
+
+        String reviewId = request.pathVariable("id");
+        Mono<Review> existingReview = reviewReactiveRepository.findById(reviewId);
+
+        return existingReview
+            .flatMap(review -> request.bodyToMono(Review.class) // convert jsonBody to Review class
+                .map(reqReview -> {
+                    review.setComment(reqReview.getComment());
+                    review.setRating(reqReview.getRating());
+                    return review;
+                })
+                .flatMap(reviewReactiveRepository::save) // convert to Mono<Review>
+                .flatMap(savedReview -> ServerResponse.ok().bodyValue(savedReview)) // convert from Mono<Review> to Mono<ServerResponse>
+            );
+    }
+
+    public Mono<ServerResponse> deleteReview(ServerRequest request) {
+
+        String reviewId = request.pathVariable("id");
+        Mono<Review> existingReview = reviewReactiveRepository.findById(reviewId);
+
+        return existingReview.flatMap(review -> reviewReactiveRepository.deleteById(reviewId))
+            .then(ServerResponse.noContent().build());
     }
 }
