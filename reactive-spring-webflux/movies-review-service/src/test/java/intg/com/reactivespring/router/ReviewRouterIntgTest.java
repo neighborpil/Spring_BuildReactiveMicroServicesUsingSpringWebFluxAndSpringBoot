@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -96,26 +97,41 @@ public class ReviewRouterIntgTest {
     @Test
     void updateReview() {
 
-        var reviewId = "abc";
-        var review = new Review(reviewId, 1L, "Awesome Movie", 9.0);
-        reviewReactiveRepository.save(review);
+        var review = new Review(null, 1L, "Awesome Movie", 9.0);
+        Review savedReview = reviewReactiveRepository.save(review).block();
 
-        var changedRating = 8.0;
-        review.setRating(changedRating);
+        var updatedReviewRating = 8.0;
+        var reviewUpdate = new Review(null, 1L, "Awesome Movie", updatedReviewRating);
 
         webTestClient
             .put()
-            .uri(REVIEWS_URL + "/" + reviewId)
-            .bodyValue(review)
+            .uri(REVIEWS_URL + "/{id}", savedReview.getReviewId())
+            .bodyValue(reviewUpdate)
             .exchange()
             .expectStatus()
             .is2xxSuccessful()
             .expectBody(Review.class)
             .consumeWith(entityExchangeResult -> {
 
-                var savedReview = entityExchangeResult.getResponseBody();
-                assert savedReview != null;
-                assert savedReview.getRating() == changedRating;
+                var updatedReview = entityExchangeResult.getResponseBody();
+                assert updatedReview != null;
+                assert updatedReview.getRating() == updatedReviewRating;
             });
+    }
+
+
+    @Test
+    void deleteReview() {
+
+        var reviewId = "abc";
+        var review = new Review(reviewId, 1L, "Awesome Movie", 9.0);
+        reviewReactiveRepository.save(review).block();
+
+        webTestClient
+            .delete()
+            .uri(REVIEWS_URL + "/{id}", reviewId)
+            .exchange()
+            .expectStatus()
+            .isNoContent();
     }
 }
