@@ -3,6 +3,7 @@ package com.reactivespring.controller;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.reactivespring.domain.Movie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,8 @@ public class MoviesControllerIntgTest {
                 .is4xxClientError()
                 .expectBody(String.class)
                 .isEqualTo("There is no MovieInfo Avaialable for the passed in Id : abc");
+
+        WireMock.verify(1, getRequestedFor(urlEqualTo("/v1/movieinfos" + "/" + movieId)));
     }
 
     @Test
@@ -112,23 +115,53 @@ public class MoviesControllerIntgTest {
 
         var movieId = "abc";
         stubFor(get(urlEqualTo("/v1/movieinfos" + "/" + movieId))
-                .willReturn(aResponse()
-                        .withStatus(500)
-                        .withBody("MovieInfo Service Unavailable")));
+            .willReturn(aResponse()
+                .withStatus(500)
+                .withBody("MovieInfo Service Unavailable")));
+
+//        stubFor(get(urlPathEqualTo("/v1/reviews"))
+//                .willReturn(aResponse()
+//                        .withHeader("Content-type", "application/json")
+//                        .withBodyFile("reviews.json")));
+
+
+        webTestClient
+            .get()
+            .uri("/v1/movies/{id}", movieId)
+            .exchange() // make the call
+            .expectStatus()
+            .is5xxServerError()
+            .expectBody(String.class)
+            .isEqualTo("Server Exception in MoviesInfoService MovieInfo Service Unavailable");
+
+        WireMock.verify(4, getRequestedFor(urlEqualTo("/v1/movieinfos" + "/" + movieId)));
+    }
+
+    @Test
+    void retrieveMovieById_reviews_5XX() {
+
+
+        var movieId = "abc";
+        stubFor(get(urlEqualTo("/v1/movieinfos" + "/" + movieId))
+            .willReturn(aResponse()
+                .withHeader("Content-type", "application/json")
+                .withBodyFile("movieinfo.json")));
 
         stubFor(get(urlPathEqualTo("/v1/reviews"))
-                .willReturn(aResponse()
-                        .withHeader("Content-type", "application/json")
-                        .withBodyFile("reviews.json")));
-
+            .willReturn(aResponse()
+                .withStatus(500)
+                .withBody("Review Service Not Available")));
 
         webTestClient
                 .get()
                 .uri("/v1/movies/{id}", movieId)
                 .exchange() // make the call
                 .expectStatus()
-                .is4xxClientError()
+                .is5xxServerError()
                 .expectBody(String.class)
-                .isEqualTo("There is no MovieInfo Avaialable for the passed in Id : abc");
+                .isEqualTo("Server Exception in ReviewsService Review Service Not Available");
+
+        WireMock.verify(4, getRequestedFor(urlPathMatching("/v1/reviews*")));
     }
+
 }
