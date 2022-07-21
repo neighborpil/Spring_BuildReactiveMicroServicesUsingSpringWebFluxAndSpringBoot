@@ -6,10 +6,12 @@ import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 @RestController
 @RequestMapping("/v1")
@@ -17,6 +19,9 @@ import reactor.core.publisher.Mono;
 public class MoviesInfoController {
 
     private MoviesInfoService moviesInfoService;
+
+//    Sinks.Many<MovieInfo> moviesInfoSink = Sinks.many().replay().all(); // replay: subcriber가 올 때마다 모든 이벤트를 보낸다
+    Sinks.Many<MovieInfo> moviesInfoSink = Sinks.many().replay().latest(); // replay: subcriber가 올 때마다 모든 이벤트를 보낸다
 
     public MoviesInfoController(MoviesInfoService moviesInfoService) {
         this.moviesInfoService = moviesInfoService;
@@ -49,11 +54,21 @@ public class MoviesInfoController {
                 .log();
     }
 
+    @GetMapping(value = "/movieinfos/stream", produces = MediaType.APPLICATION_NDJSON_VALUE)
+    public Flux<MovieInfo> getMoveInfoById() {
+
+        return moviesInfoSink.asFlux().log();
+    }
+
     @PostMapping("/movieinfos")
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<MovieInfo> addMovieInfo(@RequestBody @Valid MovieInfo movieInfo) {
 
-        return moviesInfoService.addMovieInfo(movieInfo).log();
+        return moviesInfoService.addMovieInfo(movieInfo)
+            .doOnNext(savedInfo -> moviesInfoSink.tryEmitNext(savedInfo));
+
+        // publish that movie to something
+        // subscribe to this movieinfo
     }
 
     @PutMapping("/movieinfos/{id}")
